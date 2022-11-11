@@ -1,0 +1,23 @@
+[app]
+name = "codesearch"
+mode = "dev"
+level = "info"
+http_listen = "8080"
+url = "0.0.0.0:30080"
+pprof = false
+params = false
+logger = "/log"
+version = "1.0.0"
+
+[mongodb]
+dsn = "mongodb://'':''@127.0.0.1:27027"
+conn_time_out= 10
+conn_max_pool_size= 10
+
+
+[git]
+Key = "rSspW_3wxn_tyUL48e6x"
+url = "https://gitlab.xthktech.cn"
+gitlab_depod_name = "app_gitlab"
+gitlab_code_name = "code_list"
+gitlab_project_name = "project_list"
