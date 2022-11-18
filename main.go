@@ -3,6 +3,7 @@ package main
 import (
 	"codesearch/conf"
 	"codesearch/global"
+	"codesearch/global/glogs"
 	"codesearch/router"
 	"fmt"
 )
@@ -12,7 +13,7 @@ func main() {
 	if err != nil {
 		return
 	}
-
+	glogs.InitLog()
 	global.InitMongoDb(conf.ConfInfo.MGConf.Dsn, conf.ConfInfo.MGConf.ConnMaxPoolSize, conf.ConfInfo.MGConf.ConnTimeOut)
 	routers := router.Routers()
 	address := fmt.Sprintf("0.0.0.0:%v", conf.ConfInfo.AppConf.HttpListen)

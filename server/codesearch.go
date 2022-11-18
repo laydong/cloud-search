@@ -46,17 +46,17 @@ func GetProjectsID(c *gin.Context, project string) (resp Projects, err error) {
 }
 
 // GetProjects 获取项目列表信息
-func GetProjects(c *gin.Context) (resp []Projects, err error) {
-	url := viper.GetString("git.url") + "/api/v4/projects?" + GetPrivateToken()
-	res, err := http.Get(url)
-	//body, err := utils.HttpGet(c, url, nil)
+func GetProjects(c *gin.Context, page, perPage int) (resp []Projects, err error) {
+	url := viper.GetString("git.url") + "/api/v4/projects?pagination=keyset&page=" + strconv.Itoa(page) + "&per_page=" + strconv.Itoa(perPage) + GetPrivateToken()
+	//res, err := http.Get(url)
+	body, err := utils.HttpGet(c, url, nil)
 	if err != nil {
 		glogs.Error("项目信息获取错误", err.Error())
 		return
 	}
-	defer res.Body.Close()
-	data, err := io.ReadAll(res.Body)
-	err = json.Unmarshal(data, &resp)
+	//defer res.Body.Close()
+	//data, err := io.ReadAll(res.Body)
+	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		return
 	}
