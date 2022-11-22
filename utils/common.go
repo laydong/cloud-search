@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"bytes"
 	"codesearch/global/gcalx"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"io"
 	"path"
 
@@ -148,4 +150,14 @@ func InSliceString(k string, s []string) bool {
 		}
 	}
 	return false
+}
+
+//StringReplace 字符串批量替换
+func StringReplace(str, old, new, sign string) (resp string, err error) {
+	resp = strings.Replace(str, old, new, -1)
+	if bytes.Contains([]byte(resp), []byte(sign)) == true {
+		resp = ""
+		err = errors.New("未替换完全")
+	}
+	return
 }

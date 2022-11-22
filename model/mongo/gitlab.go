@@ -1,8 +1,8 @@
 package mongo
 
 import (
-	"codesearch/global"
 	"codesearch/global/glogs"
+	"codesearch/global/gstore"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/bson"
@@ -51,7 +51,7 @@ type LineData struct {
 
 // AddOne 单条插入
 func AddOne(c *gin.Context, dbname string, data interface{}) (err error, resp interface{}) {
-	collection := global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(dbname)
+	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(dbname)
 	resp, err = collection.InsertOne(c, data)
 	glogs.Info("入库记录", err)
 	return
@@ -59,7 +59,7 @@ func AddOne(c *gin.Context, dbname string, data interface{}) (err error, resp in
 
 //AddALL 批量插入
 func AddALL(c *gin.Context, name string, data []interface{}) {
-	collection := global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(name)
+	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(name)
 	_, err := collection.InsertMany(c, data)
 	if err != nil {
 		return
@@ -68,14 +68,14 @@ func AddALL(c *gin.Context, name string, data []interface{}) {
 
 //FindOne 单条查询
 func FindOne(c *gin.Context) (resp Project, err error) {
-	collection := global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_project_name"))
+	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_project_name"))
 	err = collection.FindOne(c, bson.M{"project_name": "user-web"}).Decode(&resp)
 	return
 }
 
 //Find 多条查询
 func Find(c *gin.Context, page, limit int) (data interface{}, err error) {
-	collection := global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name"))
+	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name"))
 	count, err := collection.CountDocuments(c, bson.M{"version": "1.0.0"})
 	findOptions := options.Find()
 	findOptions.SetLimit(int64(limit))
@@ -95,49 +95,49 @@ func Find(c *gin.Context, page, limit int) (data interface{}, err error) {
 
 //UpOne 单条更新
 func UpOne(c *gin.Context) (err error) {
-	collection := global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name"))
+	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name"))
 	_, err = collection.UpdateOne(c, bson.M{"project_name": "user-web"}, bson.M{"$set": bson.M{"version": "1.0.1"}})
 	return
 }
 
 //UpAll 批量更新
 func UpAll(c *gin.Context) (err error) {
-	collection := global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name"))
+	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name"))
 	_, err = collection.UpdateMany(c, bson.M{"version": "1.0.0"}, bson.M{"$set": bson.M{"version": "1.0.1"}})
 	return
 }
 
 //DelOne 删除单条
 func DelOne(c *gin.Context) (err error) {
-	collection := global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name"))
+	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name"))
 	_, err = collection.DeleteOne(c, bson.M{"project_name": "user-web"})
 	return
 }
 
 //DelAll 删除多条
 func DelAll(c *gin.Context) (err error) {
-	collection := global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_project_name"))
+	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_project_name"))
 	_, err = collection.DeleteMany(c, bson.M{"version": "1.0.1"})
 	return
 }
 
 //DelCodeAll 删除指定项目
 func DelCodeAll(c *gin.Context, project string) (err error) {
-	collection := global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_project_name"))
+	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_project_name"))
 	_, err = collection.DeleteMany(c, bson.M{"projectsname": project})
 	return
 }
 
-//CodeInit 处理数据初始化
-func CodeInit(c *gin.Context) (err error) {
-	_, err = global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name")).DeleteMany(c, bson.D{})
-	_, err = global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_project_name")).DeleteMany(c, bson.D{})
+//CodeInitCodeName 处理数据初始化
+func CodeInitCodeName(c *gin.Context) (err error) {
+	_, err = gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name")).DeleteMany(c, bson.D{})
+	_, err = gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_project_name")).DeleteMany(c, bson.D{})
 	return
 }
 
 //CodeFind 多条查询
 func CodeFind(c *gin.Context, envID uint, str string, page, limit int) (data interface{}, err error) {
-	collection := global.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name"))
+	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_code_name"))
 	filter := bson.M{"envid": envID, "content": bson.M{"$regex": primitive.Regex{Pattern: str}}}
 	count, err := collection.CountDocuments(c, filter)
 	findOptions := options.Find()
@@ -168,4 +168,17 @@ func CodeFind(c *gin.Context, envID uint, str string, page, limit int) (data int
 		}
 	}
 	return CutPageData(count, page, limit, len(res), res), err
+}
+
+func GetCodeComment(c *gin.Context, str string) (resp interface{}) {
+	collection := gstore.Mdb.Database("app_gitlab").Collection("code_list")
+	//match := bson.M{"$match": bson.M{"content": bson.M{"$regex": primitive.Regex{Pattern: str}}}}
+	filter := bson.M{"content": bson.M{"$regex": primitive.Regex{Pattern: str}}}
+	find, err := collection.Find(c, filter)
+	if err != nil {
+		return
+	}
+	var data []ProjectsFileList
+	find.All(c, data)
+	return data
 }

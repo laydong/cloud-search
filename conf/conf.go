@@ -31,12 +31,19 @@ func InitDoAfter() error {
 			ConnTimeOut:     viper.GetInt("mongodb.conn_time_out"),
 			ConnMaxPoolSize: viper.GetInt("mongodb.conn_max_pool_size"),
 		},
+		DBConf: DBConf{
+			Dsn:             viper.GetString("mysql.dsn"),
+			MaxIdleConn:     viper.GetInt("mysql.max_idle_conn"),
+			MaxOpenConn:     viper.GetInt("mysql.max_open_conn"),
+			ConnMaxLifetime: viper.GetInt("mysql.conn_max_lifetime"),
+		},
 	}
 	return nil
 }
 
 type Config struct {
 	AppConf AppConf
+	DBConf  DBConf
 	MGConf  MGConf
 }
 
@@ -55,5 +62,12 @@ type AppConf struct {
 type MGConf struct {
 	ConnTimeOut     int    `json:"conn_time_out"`
 	ConnMaxPoolSize int    `json:"conn_max_pool_size"`
+	Dsn             string `json:"dsn"`
+}
+
+type DBConf struct {
+	MaxIdleConn     int    `json:"max_idle_conn"`
+	MaxOpenConn     int    `json:"max_open_conn"`
+	ConnMaxLifetime int    `json:"conn_max_lifetime"`
 	Dsn             string `json:"dsn"`
 }

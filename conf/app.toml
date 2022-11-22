@@ -10,14 +10,21 @@ logger = "/log"
 version = "1.0.0"
 
 [mongodb]
-dsn = "mongodb://'':''@127.0.0.1:27027"
+dsn = "mongodb://admin:123456@127.0.0.1:27017"
+#dsn = "mongodb://root:xthk123456@192.168.3.100:32335"
 conn_time_out= 10
 conn_max_pool_size= 10
 
+[mysql]
+dsn = "root:xthk123456@tcp(192.168.3.100:31886)/xthk_devops?charset=utf8&parseTime=True&loc=Local"
+db_name = "xthk_devops"
+max_idle_conn = 10
+max_open_conn = 100
+conn_max_lifetime = 6
 
 [git]
 Key = "rSspW_3wxn_tyUL48e6x"
 url = "https://gitlab.xthktech.cn"
-gitlab_depod_name = "app_gitlab"
+gitlab_depod_name = "data"
 gitlab_code_name = "code_list"
 gitlab_project_name = "project_list"
