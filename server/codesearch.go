@@ -2,7 +2,6 @@ package server
 
 import (
 	"codesearch/model/gitlab"
-	"codesearch/model/mysql"
 	"github.com/gin-gonic/gin"
 	"strconv"
 	"strings"
@@ -10,28 +9,28 @@ import (
 
 func ProjectTag(c *gin.Context, project gitlab.Projects, task *TaskEsPool) {
 	projectName := strings.Replace(project.Name, "_", "-", -1)
-	data, _ := new(mysql.ProjectModel).QueryByCode(c, projectName)
-	if len(data) > 0 {
-		for _, v := range data {
-			if v.Tag != "" {
-				task.ProjectsTag <- gitlab.ProjectsTag{
-					Id:    project.Id,
-					Code:  projectName,
-					EnvID: v.EnvId,
-					Tag:   v.Tag,
-				}
-			}
-		}
-	} else {
-		if project.Tag != "" {
-			task.ProjectsTag <- gitlab.ProjectsTag{
-				Id:    project.Id,
-				Code:  projectName,
-				EnvID: 3,
-				Tag:   project.Tag,
-			}
+	//data, _ := new(mysql.ProjectModel).QueryByCode(c, projectName)
+	//if len(data) > 0 {
+	//	for _, v := range data {
+	//		if v.Tag != "" {
+	//			task.ProjectsTag <- gitlab.ProjectsTag{
+	//				Id:    project.Id,
+	//				Code:  projectName,
+	//				EnvID: v.EnvId,
+	//				Tag:   v.Tag,
+	//			}
+	//		}
+	//	}
+	//} else {
+	if project.Tag != "" {
+		task.ProjectsTag <- gitlab.ProjectsTag{
+			Id:    project.Id,
+			Code:  projectName,
+			EnvID: 3,
+			Tag:   project.Tag,
 		}
 	}
+	//}
 	return
 }
 
@@ -64,7 +63,7 @@ func ProjectList(c *gin.Context, project gitlab.ProjectsTag, task *TaskEsPool) {
 }
 
 func ProjectTree(c *gin.Context, projectsId, ref, path, projectsName string, page, envID int, task *TaskEsPool) {
-	resp, _ := gitlab.ProjectFileList(c, projectsId, ref, "true", page, "")
+	resp, _ := gitlab.ProjectFileList(c, projectsId, ref, "true", page, path)
 	if len(resp) > 0 {
 		for _, v := range resp {
 			if v.Type == "tree" {
