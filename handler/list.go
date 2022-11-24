@@ -11,7 +11,7 @@ func CodeInit(c *gin.Context) {
 }
 
 func CodeList(c *gin.Context) {
-	//server.UpProjects(c)
-	server.ProjectCodeUp(c, "devops")
+	server.UpProjects(c)
+	//server.ProjectCodeUp(c, "devops")
 	utils.OkWithData(nil, c)
 }

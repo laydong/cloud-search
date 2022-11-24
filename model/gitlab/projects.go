@@ -119,9 +119,6 @@ func ProjectFileList(c *gin.Context, projectsId, ref, recursive string, page int
 	if ref != "" {
 		urls = urls + "&ref=" + ref
 	}
-	//if recursive == "true" {
-	//	urls = urls + "&recursive=true" + recursive
-	//}
 	if path != "" {
 		urls = urls + "&path=" + path
 	}

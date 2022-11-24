@@ -15,37 +15,42 @@ func ProjectTag(c *gin.Context, project gitlab.Projects) (resp []gitlab.Projects
 	if len(data) > 0 {
 		for _, v := range data {
 			if v.Tag != "" {
-				resp = append(resp, gitlab.ProjectsTag{
+				//resp = append(resp, gitlab.ProjectsTag{
+				//	Id:    project.Id,
+				//	Code:  projectName,
+				//	EnvID: v.EnvId,
+				//	Tag:   v.Tag,
+				//})
+				fmt.Println("添加项目" + project.Name + "---" + v.Tag)
+				ProjectsTag <- gitlab.ProjectsTag{
 					Id:    project.Id,
 					Code:  projectName,
 					EnvID: v.EnvId,
 					Tag:   v.Tag,
-				})
-				//fmt.Println("添加项目" + project.Name + "---" + v.Tag)
-				//ProjectsTag <-
+				}
 			}
 		}
 	} else {
 		if project.Tag != "" {
-			resp = append(resp, gitlab.ProjectsTag{
-				Id:    project.Id,
-				Code:  projectName,
-				EnvID: 3,
-				Tag:   project.Tag,
-			})
-			//fmt.Println("添加项目2" + project.Name + "---" + project.Tag)
-			//ProjectsTag <- gitlab.ProjectsTag{
+			//resp = append(resp, gitlab.ProjectsTag{
 			//	Id:    project.Id,
 			//	Code:  projectName,
 			//	EnvID: 3,
 			//	Tag:   project.Tag,
-			//}
+			//})
+			fmt.Println("添加项目2" + project.Name + "---" + project.Tag)
+			ProjectsTag <- gitlab.ProjectsTag{
+				Id:    project.Id,
+				Code:  projectName,
+				EnvID: 3,
+				Tag:   project.Tag,
+			}
 		}
 	}
 	return
 }
 
-func ProjectList(c *gin.Context, project gitlab.ProjectsTag) {
+func ProjectList(c *gin.Context, project gitlab.ProjectsTag, task *TaskEsPool) {
 	var resp []gitlab.ProjectsFileList
 	resp, _ = gitlab.ProjectFileList(c, strconv.Itoa(project.Id), project.Tag, "", 1, "")
 	if len(resp) > 0 {
@@ -63,11 +68,11 @@ func ProjectList(c *gin.Context, project gitlab.ProjectsTag) {
 				//	EnvID:        project.EnvID,
 				//}
 				fmt.Println("投递1", v)
-				ProjectTree(c, strconv.Itoa(project.Id), project.Tag, v.Path, project.Code, 1, project.EnvID)
+				ProjectTree(c, strconv.Itoa(project.Id), project.Tag, v.Path, project.Code, 1, project.EnvID, task)
 			} else {
 				v.Content = gitlab.GetFileRaw(c, strconv.Itoa(project.Id), v.Path, project.Tag)
 				if v.Content != "" {
-					ProjectsFileListChan <- gitlab.ProjectsFileList{
+					task.ProjectsFileListChan <- gitlab.ProjectsFileList{
 						Id:           v.Id,
 						Name:         v.Name,
 						Type:         v.Type,
@@ -83,13 +88,13 @@ func ProjectList(c *gin.Context, project gitlab.ProjectsTag) {
 			}
 		}
 		if len(resp) == 100 {
-			ProjectTree(c, strconv.Itoa(project.Id), project.Tag, "", project.Code, 2, project.EnvID)
+			ProjectTree(c, strconv.Itoa(project.Id), project.Tag, "", project.Code, 2, project.EnvID, task)
 		}
 	}
 	return
 }
 
-func ProjectTree(c *gin.Context, projectsId, ref, path, projectsName string, page, envID int) {
+func ProjectTree(c *gin.Context, projectsId, ref, path, projectsName string, page, envID int, task *TaskEsPool) {
 	var resp []gitlab.ProjectsFileList
 	resp, _ = gitlab.ProjectFileList(c, projectsId, ref, "", page, path)
 	if len(resp) > 0 {
@@ -107,11 +112,11 @@ func ProjectTree(c *gin.Context, projectsId, ref, path, projectsName string, pag
 				//	EnvID:        envID,
 				//}
 				fmt.Println("投递3", v)
-				ProjectTree(c, v.Id, v.Tag, v.Path, v.ProjectsName, 1, v.EnvID)
+				ProjectTree(c, v.Id, v.Tag, v.Path, v.ProjectsName, 1, v.EnvID, task)
 			} else {
 				v.Content = gitlab.GetFileRaw(c, projectsId, v.Path, ref)
 				if v.Content != "" {
-					ProjectsFileListChan <- gitlab.ProjectsFileList{
+					task.ProjectsFileListChan <- gitlab.ProjectsFileList{
 						Id:           v.Id,
 						Name:         v.Name,
 						Type:         v.Type,
@@ -127,7 +132,7 @@ func ProjectTree(c *gin.Context, projectsId, ref, path, projectsName string, pag
 			}
 		}
 		if len(resp) == 100 {
-			ProjectTree(c, projectsId, ref, path, projectsName, page+1, envID)
+			ProjectTree(c, projectsId, ref, path, projectsName, page+1, envID, task)
 		}
 	}
 	return
