@@ -2,89 +2,132 @@ package server
 
 import (
 	"codesearch/model/gitlab"
+	"codesearch/model/mysql"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"strconv"
 	"strings"
 )
 
-func ProjectTag(c *gin.Context, project gitlab.Projects, task *TaskEsPool) {
+func ProjectTag(c *gin.Context, project gitlab.Projects) (resp []gitlab.ProjectsTag) {
 	projectName := strings.Replace(project.Name, "_", "-", -1)
-	//data, _ := new(mysql.ProjectModel).QueryByCode(c, projectName)
-	//if len(data) > 0 {
-	//	for _, v := range data {
-	//		if v.Tag != "" {
-	//			task.ProjectsTag <- gitlab.ProjectsTag{
-	//				Id:    project.Id,
-	//				Code:  projectName,
-	//				EnvID: v.EnvId,
-	//				Tag:   v.Tag,
-	//			}
-	//		}
-	//	}
-	//} else {
-	if project.Tag != "" {
-		task.ProjectsTag <- gitlab.ProjectsTag{
-			Id:    project.Id,
-			Code:  projectName,
-			EnvID: 3,
-			Tag:   project.Tag,
+	data, _ := new(mysql.ProjectModel).QueryByCode(c, projectName)
+	if len(data) > 0 {
+		for _, v := range data {
+			if v.Tag != "" {
+				resp = append(resp, gitlab.ProjectsTag{
+					Id:    project.Id,
+					Code:  projectName,
+					EnvID: v.EnvId,
+					Tag:   v.Tag,
+				})
+				//fmt.Println("添加项目" + project.Name + "---" + v.Tag)
+				//ProjectsTag <-
+			}
+		}
+	} else {
+		if project.Tag != "" {
+			resp = append(resp, gitlab.ProjectsTag{
+				Id:    project.Id,
+				Code:  projectName,
+				EnvID: 3,
+				Tag:   project.Tag,
+			})
+			//fmt.Println("添加项目2" + project.Name + "---" + project.Tag)
+			//ProjectsTag <- gitlab.ProjectsTag{
+			//	Id:    project.Id,
+			//	Code:  projectName,
+			//	EnvID: 3,
+			//	Tag:   project.Tag,
+			//}
 		}
 	}
-	//}
 	return
 }
 
-func ProjectList(c *gin.Context, project gitlab.ProjectsTag, task *TaskEsPool) {
-	resp, _ := gitlab.ProjectFileList(c, strconv.Itoa(project.Id), project.Tag, "true", 1, "")
+func ProjectList(c *gin.Context, project gitlab.ProjectsTag) {
+	var resp []gitlab.ProjectsFileList
+	resp, _ = gitlab.ProjectFileList(c, strconv.Itoa(project.Id), project.Tag, "", 1, "")
 	if len(resp) > 0 {
 		for _, v := range resp {
 			if v.Type == "tree" {
-				v.Id = strconv.Itoa(project.Id)
-				v.Tag = project.Tag
-				v.ProjectsName = project.Code
-				v.EnvID = project.EnvID
-				task.ProjectsFileChan <- v
+				//ProjectsFileChan <- gitlab.ProjectsFileList{
+				//	Id:   v.Id,
+				//	Name: v.Name,
+				//	Type: v.Type,
+				//	Path: v.Path,
+				//	Mode: v.Mode,
+				//	//Content:      v.Content,
+				//	Tag:          project.Tag,
+				//	ProjectsName: project.Code,
+				//	EnvID:        project.EnvID,
+				//}
+				fmt.Println("投递1", v)
+				ProjectTree(c, strconv.Itoa(project.Id), project.Tag, v.Path, project.Code, 1, project.EnvID)
 			} else {
 				v.Content = gitlab.GetFileRaw(c, strconv.Itoa(project.Id), v.Path, project.Tag)
 				if v.Content != "" {
-					v.Id = strconv.Itoa(project.Id)
-					v.Tag = project.Tag
-					v.ProjectsName = project.Code
-					v.EnvID = project.EnvID
-					task.ProjectsFileListChan <- v
+					ProjectsFileListChan <- gitlab.ProjectsFileList{
+						Id:           v.Id,
+						Name:         v.Name,
+						Type:         v.Type,
+						Path:         v.Path,
+						Mode:         v.Mode,
+						Content:      v.Content,
+						Tag:          project.Tag,
+						ProjectsName: project.Code,
+						EnvID:        project.EnvID,
+					}
+					fmt.Println("投递2", v.Path)
 				}
 			}
 		}
 		if len(resp) == 100 {
-			ProjectTree(c, strconv.Itoa(project.Id), project.Tag, "", project.Code, 2, project.EnvID, task)
+			ProjectTree(c, strconv.Itoa(project.Id), project.Tag, "", project.Code, 2, project.EnvID)
 		}
 	}
 	return
 }
 
-func ProjectTree(c *gin.Context, projectsId, ref, path, projectsName string, page, envID int, task *TaskEsPool) {
-	resp, _ := gitlab.ProjectFileList(c, projectsId, ref, "true", page, path)
+func ProjectTree(c *gin.Context, projectsId, ref, path, projectsName string, page, envID int) {
+	var resp []gitlab.ProjectsFileList
+	resp, _ = gitlab.ProjectFileList(c, projectsId, ref, "", page, path)
 	if len(resp) > 0 {
 		for _, v := range resp {
 			if v.Type == "tree" {
-				v.Id = projectsId
-				v.Tag = ref
-				v.ProjectsName = projectsName
-				v.EnvID = envID
-				task.ProjectsFileChan <- v
+				//ProjectsFileChan <- gitlab.ProjectsFileList{
+				//	Id:   v.Id,
+				//	Name: v.Name,
+				//	Type: v.Type,
+				//	Path: v.Path,
+				//	Mode: v.Mode,
+				//	//Content:      v.Content,
+				//	Tag:          ref,
+				//	ProjectsName: projectsName,
+				//	EnvID:        envID,
+				//}
+				fmt.Println("投递3", v)
+				ProjectTree(c, v.Id, v.Tag, v.Path, v.ProjectsName, 1, v.EnvID)
 			} else {
 				v.Content = gitlab.GetFileRaw(c, projectsId, v.Path, ref)
 				if v.Content != "" {
-					v.Id = projectsId
-					v.Tag = ref
-					v.ProjectsName = projectsName
-					v.EnvID = envID
-					task.ProjectsFileListChan <- v
+					ProjectsFileListChan <- gitlab.ProjectsFileList{
+						Id:           v.Id,
+						Name:         v.Name,
+						Type:         v.Type,
+						Path:         v.Path,
+						Mode:         v.Mode,
+						Content:      v.Content,
+						Tag:          ref,
+						ProjectsName: projectsName,
+						EnvID:        envID,
+					}
+					fmt.Println("投递4", v.Path)
 				}
 			}
 		}
 		if len(resp) == 100 {
-			ProjectTree(c, projectsId, ref, path, projectsName, page+1, envID, task)
+			ProjectTree(c, projectsId, ref, path, projectsName, page+1, envID)
 		}
 	}
 	return

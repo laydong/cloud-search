@@ -16,7 +16,7 @@ conn_time_out= 10
 conn_max_pool_size= 10
 
 [mysql]
-dsn = "root:xthk123456@tcp(192.168.3.100:31886)/xthk_devops?charset=utf8&parseTime=True&loc=Local"
+dsn = "root:xthk123456@tcp(192.168.3.100:30321)/xthk_devops?charset=utf8&parseTime=True&loc=Local"
 db_name = "xthk_devops"
 max_idle_conn = 10
 max_open_conn = 100

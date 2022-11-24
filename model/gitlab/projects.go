@@ -115,13 +115,13 @@ func GetProjectsList(c *gin.Context, page, perPage int) (resp []Projects, err er
 @ page 页码
 */
 func ProjectFileList(c *gin.Context, projectsId, ref, recursive string, page int, path string) (data []ProjectsFileList, err error) {
-	urls := viper.GetString("git.url") + "/api/v4/projects/" + projectsId + "/repository/tree?per_page=100" + "&page=" + strconv.Itoa(page) + GetPrivateToken()
+	urls := viper.GetString("git.url") + "/api/v4/projects/" + projectsId + "/repository/tree?recursive=true&per_page=100&page=" + strconv.Itoa(page) + GetPrivateToken()
 	if ref != "" {
 		urls = urls + "&ref=" + ref
 	}
-	if recursive != "true" {
-		urls = urls + "&recursive=" + recursive
-	}
+	//if recursive == "true" {
+	//	urls = urls + "&recursive=true" + recursive
+	//}
 	if path != "" {
 		urls = urls + "&path=" + path
 	}
@@ -130,6 +130,7 @@ func ProjectFileList(c *gin.Context, projectsId, ref, recursive string, page int
 		glogs.Error(err.Error())
 		return
 	}
+	data = []ProjectsFileList{}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
 		glogs.Error(err.Error())
