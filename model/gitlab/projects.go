@@ -114,7 +114,7 @@ func GetProjectsList(c *gin.Context, page, perPage int) (resp []Projects, err er
 @ path 存储库内的路径。用于获取子目录的内容
 @ page 页码
 */
-func ProjectFileList(c *gin.Context, projectsId, ref, recursive string, page int, path string) (data []ProjectsFileList, err error) {
+func ProjectFileList(c *gin.Context, projectsId, ref string, page int, path string) (data *[]ProjectsFileList, err error) {
 	urls := viper.GetString("git.url") + "/api/v4/projects/" + projectsId + "/repository/tree?recursive=true&per_page=100&page=" + strconv.Itoa(page) + GetPrivateToken()
 	if ref != "" {
 		urls = urls + "&ref=" + ref
@@ -127,12 +127,12 @@ func ProjectFileList(c *gin.Context, projectsId, ref, recursive string, page int
 		glogs.Error(err.Error())
 		return
 	}
-	data = []ProjectsFileList{}
-	err = json.Unmarshal(body, &data)
+	resp := []ProjectsFileList{}
+	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		glogs.Error(err.Error())
 	}
-	return
+	return &resp, err
 }
 
 /**
