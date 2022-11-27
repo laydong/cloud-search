@@ -48,18 +48,19 @@ func ProjectTag(c *gin.Context, project gitlab.Projects) {
 
 func ProjectList(c *gin.Context, project gitlab.ProjectsTag) {
 	//var resp []gitlab.ProjectsFileList
-	var wait sync.WaitGroup
+
 	page := 1
 	resp, _ := gitlab.ProjectFileList(c, strconv.Itoa(project.Id), project.Tag, page, "")
-	if len(*resp) > 0 {
-		for _, v := range *resp {
+	if len(resp) > 0 {
+		var wait sync.WaitGroup
+		for _, v := range resp {
 			wait.Add(1)
 			v.Id = strconv.Itoa(project.Id)
 			v.Tag = project.Tag
 			v.ProjectsName = project.Code
 			v.EnvID = project.EnvID
 			if v.Type == "tree" {
-				ProjectsFileChan <- v
+				//ProjectsFileChan <- v
 				//ProjectsFileChan <- gitlab.ProjectsFileList{
 				//	Id:   v.Id,
 				//	Name: v.Name,
@@ -72,7 +73,7 @@ func ProjectList(c *gin.Context, project gitlab.ProjectsTag) {
 				//	EnvID:        project.EnvID,
 				//}
 				fmt.Println("投递1", v)
-				//ProjectTree(c, strconv.Itoa(project.Id), project.Tag, v.Name, project.Code, page+1, project.EnvID)
+				ProjectTree(c, strconv.Itoa(project.Id), project.Tag, v.Name, project.Code, page+1, project.EnvID)
 			} else {
 				v.Content = gitlab.GetFileRaw(c, strconv.Itoa(project.Id), v.Path, project.Tag)
 				if v.Content != "" {
@@ -93,27 +94,29 @@ func ProjectList(c *gin.Context, project gitlab.ProjectsTag) {
 			}
 			wait.Done()
 		}
-		if len(*resp) == 100 {
+		wait.Wait()
+		if len(resp) == 100 {
 			ProjectTree(c, strconv.Itoa(project.Id), project.Tag, "", project.Code, page+1, project.EnvID)
 		}
 	}
-	wait.Wait()
+
 	return
 }
 
 func ProjectTree(c *gin.Context, projectsId, ref, filePath, projectsName string, page, envID int) {
 	//var resp []gitlab.ProjectsFileList
-	var wait sync.WaitGroup
+
 	resp, _ := gitlab.ProjectFileList(c, projectsId, ref, page, filePath)
-	if len(*resp) > 0 {
-		for _, v := range *resp {
+	if len(resp) > 0 {
+		var wait sync.WaitGroup
+		for _, v := range resp {
 			v.Id = projectsId
 			v.Tag = ref
 			v.ProjectsName = projectsName
 			v.EnvID = envID
 			wait.Add(1)
 			if v.Type == "tree" {
-				ProjectsFileChan <- v
+				//ProjectsFileChan <- v
 				//ProjectsFileChan <- gitlab.ProjectsFileList{
 				//	Id:   v.Id,
 				//	Name: v.Name,
@@ -126,7 +129,7 @@ func ProjectTree(c *gin.Context, projectsId, ref, filePath, projectsName string,
 				//	EnvID:        envID,
 				//}
 				fmt.Println("投递3", v)
-				//ProjectTree(c, v.Id, v.Tag, v.Name, v.ProjectsName, 1, v.EnvID)
+				ProjectTree(c, v.Id, v.Tag, v.Name, v.ProjectsName, 1, v.EnvID)
 			} else {
 				v.Content = gitlab.GetFileRaw(c, projectsId, v.Path, ref)
 				if v.Content != "" {
@@ -147,10 +150,11 @@ func ProjectTree(c *gin.Context, projectsId, ref, filePath, projectsName string,
 			}
 			wait.Done()
 		}
-		if len(*resp) == 100 {
+		wait.Wait()
+		if len(resp) == 100 {
 			ProjectTree(c, projectsId, ref, filePath, projectsName, page+1, envID)
 		}
 	}
-	wait.Wait()
+
 	return
 }
