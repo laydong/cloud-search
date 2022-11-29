@@ -28,3 +28,14 @@ url = "https://gitlab.xthktech.cn"
 gitlab_depod_name = "data"
 gitlab_code_name = "code_list"
 gitlab_project_name = "project_list"
+key_end = 1800
+
+[redis]
+addr = "127.0.0.1:6379"
+db = 10
+password = ""
+min_idle_conns = 5
+pool_size = 500
+pool_timeout = 2
+idle_timeout = 10
+token_expired = 7200 # expired time 2*60*60

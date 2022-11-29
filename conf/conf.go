@@ -37,6 +37,11 @@ func InitDoAfter() error {
 			MaxOpenConn:     viper.GetInt("mysql.max_open_conn"),
 			ConnMaxLifetime: viper.GetInt("mysql.conn_max_lifetime"),
 		},
+		RDConf: RDConf{
+			Addr:     viper.GetString("redis.addr"),
+			Password: viper.GetString("redis.password"),
+			DB:       viper.GetInt("redis.db"),
+		},
 	}
 	return nil
 }
@@ -45,6 +50,7 @@ type Config struct {
 	AppConf AppConf
 	DBConf  DBConf
 	MGConf  MGConf
+	RDConf  RDConf
 }
 
 type AppConf struct {
@@ -70,4 +76,10 @@ type DBConf struct {
 	MaxOpenConn     int    `json:"max_open_conn"`
 	ConnMaxLifetime int    `json:"conn_max_lifetime"`
 	Dsn             string `json:"dsn"`
+}
+
+type RDConf struct {
+	DB       int    `json:"db"`       // redis的哪个数据库
+	Addr     string `json:"addr"`     // 服务器地址:端口
+	Password string `json:"password"` // 密码
 }
