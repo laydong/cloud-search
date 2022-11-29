@@ -204,6 +204,9 @@ func GetFileRaw(c *gin.Context, projectsId, filePath, ref string) (resp string) 
 			glogs.Error(err.Error())
 			return
 		}
+		if string(res) == "{\"message\":\"404 File Not Found\"}" {
+			return
+		}
 		return string(res)
 	}
 	return

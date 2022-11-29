@@ -57,15 +57,23 @@ func UpProjects(c *gin.Context) (err error) {
 	}
 	defer task.TaskPool.Release()
 	startProject(c, task)
-	//task.wait.Add(4)
-	go startProjectTag(c, task)          //拆分项目
-	go startProjectFileListData(c, task) //查询目录 获取文件列表
-	//go startProjectFileData(c, task)     //获取文件详情
-	go startEsAddBatch(c, task) //项目文件入库
+	task.wait.Add(2)
+	//go startProjectTag(c, task)          //拆分项目
+	task.TaskPool.Submit(func() {
+		//task.wait.Add(1)
+		startProjectFileListData(c, task)
+	})
+	task.TaskPool.Submit(func() {
+		//task.wait.Add(1)
+		startEsAddBatch(c, task)
+	})
+	//go startProjectFileListData(c, task) //查询目录 获取文件列表
+	////go startProjectFileData(c, task)     //获取文件详情
 	//go startEsAddBatch(c, task) //项目文件入库
 	//go startEsAddBatch(c, task) //项目文件入库
 	//go startEsAddBatch(c, task) //项目文件入库
-	//task.wait.Wait()
+	//go startEsAddBatch(c, task) //项目文件入库
+	task.wait.Wait()
 	stop := time.Since(task.start)
 	fmt.Printf("项目数 ：%v", task.projectNumber.String())
 	fmt.Printf("task over, 耗时：%v", stop)
@@ -100,16 +108,9 @@ func ProjectCodeUp(c *gin.Context, code string) (err error) {
 		if err != nil {
 			glogs.ErrorF(c, err.Error())
 		}
-		project.EnvID = 3
-		project.Tag = "master"
-		go ProjectList(c, gitlab.ProjectsTag{
-			Id:    project.Id,
-			Code:  project.Name,
-			EnvID: project.EnvID,
-			Tag:   project.Tag,
-		})
+		ProjectTag(c, project)
 		task.wait.Add(2)
-		//go startProjectFileData(c, task)
+		go startProjectFileListData(c, task)
 		go startEsAddBatch(c, task)
 		task.wait.Wait()
 		stop := time.Since(task.start)
@@ -127,10 +128,11 @@ func startProject(c *gin.Context, task *TaskEsPool) {
 	//获取项目信息
 	if len(data) > 0 {
 		for _, v := range data {
-			ProjectChan <- v
-			task.projectNumber.Add(1)
-			fmt.Println(task.projectNumber.String())
-			fmt.Println("项目列表：" + v.Name + "====" + v.DefaultBranch)
+			ProjectTag(c, v)
+			//ProjectChan <- v
+			//task.projectNumber.Add(1)
+			//fmt.Println(task.projectNumber.String())
+			//fmt.Println("项目列表：" + v.Name + "====" + v.DefaultBranch)
 			projects = append(projects, v)
 		}
 	}
@@ -142,31 +144,31 @@ func startProject(c *gin.Context, task *TaskEsPool) {
 	}
 }
 
-func startProjectTag(c *gin.Context, task *TaskEsPool) {
-	//defer close(ProjectChan)
-	//defer task.wait.Done()
-	var wait sync.WaitGroup
-	defer wait.Done()
-	// 从ch中接收值并赋值给变量x
-	for x := range ProjectChan {
-		wait.Add(1)
-		//err := task.TaskPool.Submit(func() {
-		ProjectTag(c, x)
-		task.projectFileNumber.Add(1)
-		fmt.Println(task.projectFileNumber.String())
-		//})
-		//if err != nil {
-		//	glogs.ErrorF(c, "项目执行错误: "+x.Name, err.Error())
-		//}
-		wait.Done()
-	}
-	wait.Wait()
-}
+//func startProjectTag(c *gin.Context, task *TaskEsPool) {
+//	defer close(ProjectChan)
+//	defer task.wait.Done()
+//	var wait sync.WaitGroup
+//	defer wait.Done()
+//	// 从ch中接收值并赋值给变量x
+//	for x := range ProjectChan {
+//		wait.Add(1)
+//		//err := task.TaskPool.Submit(func() {
+//		ProjectTag(c, x)
+//		task.projectFileNumber.Add(1)
+//		fmt.Println(task.projectFileNumber.String())
+//		//})
+//		//if err != nil {
+//		//	glogs.ErrorF(c, "项目执行错误: "+x.Name, err.Error())
+//		//}
+//		wait.Done()
+//	}
+//	wait.Wait()
+//}
 
 //项目文件列表
 func startProjectFileListData(c *gin.Context, task *TaskEsPool) {
-	//defer close(ProjectsTag)
-	//defer task.wait.Done()
+	defer close(ProjectsTag)
+	defer task.wait.Done()
 	var wait sync.WaitGroup
 	// 从ch中接收值并赋值给变量x
 	for x := range ProjectsTag {
@@ -187,8 +189,8 @@ func startProjectFileListData(c *gin.Context, task *TaskEsPool) {
 
 //项目文件解读
 func startProjectFileData(c *gin.Context, task *TaskEsPool) {
-	//defer close(ProjectsFileChan)
-	//defer task.wait.Done()
+	defer close(ProjectsFileChan)
+	defer task.wait.Done()
 	var wait sync.WaitGroup
 	//defer wait.Done()
 	// 从ch中接收值并赋值给变量x
@@ -209,8 +211,8 @@ func startProjectFileData(c *gin.Context, task *TaskEsPool) {
 }
 
 func startEsAddBatch(c *gin.Context, task *TaskEsPool) {
-	//defer close(ProjectsFileListChan)
-	//defer task.wait.Done()
+	defer close(ProjectsFileListChan)
+	defer task.wait.Done()
 	var wait sync.WaitGroup
 	// 从ch中接收值并赋值给变量x
 	for x := range ProjectsFileListChan {

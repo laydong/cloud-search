@@ -33,7 +33,7 @@ func (m *ProjectModel) QueryByCode(c *gin.Context, code string) (data []DataMode
 	err = gstore.GetDB(c).Model(ProjectModel{}).
 		Where("status", 1).
 		Where("code", code).
-		Select("xthk_project.`code`,xthk_project.env_id,(SELECT tag FROM xthk_project_chart WHERE project_id=xthk_project.id ORDER BY updated_at DESC LIMIT 1) AS tag").
+		Select("distinct xthk_project.`code`,xthk_project.env_id,(SELECT tag FROM xthk_project_chart WHERE project_id=xthk_project.id ORDER BY updated_at DESC LIMIT 1) AS tag").
 		Find(&data).Error
 	return
 }

@@ -12,7 +12,8 @@ import (
 
 func ProjectTag(c *gin.Context, project gitlab.Projects) {
 	projectName := strings.Replace(project.Name, "_", "-", -1)
-	data, _ := new(mysql.ProjectModel).QueryByCode(c, projectName)
+	var data []mysql.DataModel
+	data, _ = new(mysql.ProjectModel).QueryByCode(c, projectName)
 	var wait sync.WaitGroup
 	if len(data) > 0 {
 		for _, v := range data {
@@ -47,8 +48,6 @@ func ProjectTag(c *gin.Context, project gitlab.Projects) {
 }
 
 func ProjectList(c *gin.Context, project gitlab.ProjectsTag) {
-	//var resp []gitlab.ProjectsFileList
-
 	page := 1
 	resp, _ := gitlab.ProjectFileList(c, strconv.Itoa(project.Id), project.Tag, page, "")
 	if len(resp) > 0 {
@@ -61,34 +60,12 @@ func ProjectList(c *gin.Context, project gitlab.ProjectsTag) {
 			v.EnvID = project.EnvID
 			if v.Type == "tree" {
 				//ProjectsFileChan <- v
-				//ProjectsFileChan <- gitlab.ProjectsFileList{
-				//	Id:   v.Id,
-				//	Name: v.Name,
-				//	Type: v.Type,
-				//	Path: v.Path,
-				//	Mode: v.Mode,
-				//	//Content:      v.Content,
-				//	Tag:          project.Tag,
-				//	ProjectsName: project.Code,
-				//	EnvID:        project.EnvID,
-				//}
 				fmt.Println("投递1", v)
-				ProjectTree(c, strconv.Itoa(project.Id), project.Tag, v.Name, project.Code, page+1, project.EnvID)
+				ProjectTree(c, strconv.Itoa(project.Id), project.Tag, v.Path, project.Code, 1, project.EnvID)
 			} else {
 				v.Content = gitlab.GetFileRaw(c, strconv.Itoa(project.Id), v.Path, project.Tag)
 				if v.Content != "" {
 					ProjectsFileListChan <- v
-					//ProjectsFileListChan <- gitlab.ProjectsFileList{
-					//	Id:           v.Id,
-					//	Name:         v.Name,
-					//	Type:         v.Type,
-					//	Path:         v.Path,
-					//	Mode:         v.Mode,
-					//	Content:      v.Content,
-					//	Tag:          project.Tag,
-					//	ProjectsName: project.Code,
-					//	EnvID:        project.EnvID,
-					//}
 					fmt.Println("投递2", v.Path)
 				}
 			}
@@ -104,8 +81,6 @@ func ProjectList(c *gin.Context, project gitlab.ProjectsTag) {
 }
 
 func ProjectTree(c *gin.Context, projectsId, ref, filePath, projectsName string, page, envID int) {
-	//var resp []gitlab.ProjectsFileList
-
 	resp, _ := gitlab.ProjectFileList(c, projectsId, ref, page, filePath)
 	if len(resp) > 0 {
 		var wait sync.WaitGroup
@@ -117,34 +92,12 @@ func ProjectTree(c *gin.Context, projectsId, ref, filePath, projectsName string,
 			wait.Add(1)
 			if v.Type == "tree" {
 				//ProjectsFileChan <- v
-				//ProjectsFileChan <- gitlab.ProjectsFileList{
-				//	Id:   v.Id,
-				//	Name: v.Name,
-				//	Type: v.Type,
-				//	Path: v.Path,
-				//	Mode: v.Mode,
-				//	//Content:      v.Content,
-				//	Tag:          ref,
-				//	ProjectsName: projectsName,
-				//	EnvID:        envID,
-				//}
 				fmt.Println("投递3", v)
-				ProjectTree(c, v.Id, v.Tag, v.Name, v.ProjectsName, 1, v.EnvID)
+				ProjectTree(c, v.Id, v.Tag, v.Path, v.ProjectsName, 1, v.EnvID)
 			} else {
 				v.Content = gitlab.GetFileRaw(c, projectsId, v.Path, ref)
 				if v.Content != "" {
 					ProjectsFileListChan <- v
-					//ProjectsFileListChan <- gitlab.ProjectsFileList{
-					//	Id:           v.Id,
-					//	Name:         v.Name,
-					//	Type:         v.Type,
-					//	Path:         v.Path,
-					//	Mode:         v.Mode,
-					//	Content:      v.Content,
-					//	Tag:          ref,
-					//	ProjectsName: projectsName,
-					//	EnvID:        envID,
-					//}
 					fmt.Println("投递4", v.Path)
 				}
 			}

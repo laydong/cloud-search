@@ -11,7 +11,7 @@ func CodeInit(c *gin.Context) {
 }
 
 func CodeList(c *gin.Context) {
-	go server.UpProjects(c)
-	//server.ProjectCodeUp(c, "gxe")
+	server.UpProjects(c)
+	//server.ProjectCodeUp(c, "xthk-assistor-workbench-bms")
 	utils.OkWithData(nil, c)
 }

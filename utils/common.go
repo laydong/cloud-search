@@ -32,6 +32,9 @@ func HttpGet(c *gin.Context, urls string, head map[string]string) (resp []byte, 
 	}
 	defer res.Body.Close()
 	resp, err = io.ReadAll(res.Body)
+	if res.StatusCode != 200 {
+		err = errors.New(string(resp))
+	}
 	return
 }
 
