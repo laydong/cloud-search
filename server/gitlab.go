@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/atomic"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,28 +21,27 @@ type TaskEsPool struct {
 	projectNumber     *atomic.Int64
 	projectFileNumber *atomic.Int64
 	projectPathNumber *atomic.Int64
-	//projectFileAllRowsNumber *atomic.Int64
-	start                time.Time
-	wait                 *sync.WaitGroup
-	TaskPool             *ants.Pool
-	ProjectChan          chan gitlab.Projects
-	ProjectsTag          chan gitlab.ProjectsTag
-	ProjectsFileListChan chan gitlab.ProjectsFileList
-	ProjectsFileChan     chan gitlab.ProjectsFileList
+	start             time.Time
+	wait              *sync.WaitGroup
+	TaskPool          *ants.Pool
+	ProjectChan       chan gitlab.Projects
+	ProjectsTag       chan gitlab.ProjectsTag
+	ProjectsPathChan  chan gitlab.ProjectsFileList
+	ProjectsFileChan  chan gitlab.ProjectsFileList
 }
 
 // 批量更新项目数据
 func UpProjects(c *gin.Context) (err error) {
 	var task = &TaskEsPool{
-		projectPathNumber:    atomic.NewInt64(0),
-		projectFileNumber:    atomic.NewInt64(0),
-		projectNumber:        atomic.NewInt64(0),
-		start:                time.Now(),
-		wait:                 &sync.WaitGroup{},
-		ProjectChan:          make(chan gitlab.Projects, 1000),
-		ProjectsTag:          make(chan gitlab.ProjectsTag, 10000),
-		ProjectsFileListChan: make(chan gitlab.ProjectsFileList, 10000),
-		ProjectsFileChan:     make(chan gitlab.ProjectsFileList, 10000),
+		projectPathNumber: atomic.NewInt64(0),
+		projectFileNumber: atomic.NewInt64(0),
+		projectNumber:     atomic.NewInt64(0),
+		start:             time.Now(),
+		wait:              &sync.WaitGroup{},
+		ProjectChan:       make(chan gitlab.Projects, 1000),
+		ProjectsTag:       make(chan gitlab.ProjectsTag, 10000),
+		ProjectsPathChan:  make(chan gitlab.ProjectsFileList, 10000),
+		ProjectsFileChan:  make(chan gitlab.ProjectsFileList, 10000),
 	}
 	task.TaskPool, err = ants.NewPool(runtime.NumCPU() * 1000)
 	if err != nil {
@@ -51,11 +49,22 @@ func UpProjects(c *gin.Context) (err error) {
 	}
 	defer task.TaskPool.Release()
 	startProject(c, task)
-	task.wait.Add(4)
-	go startProjectTag(c, task)          //拆分项目
-	go startProjectFileListData(c, task) //查询目录 获取文件列表
-	go startProjectFileData(c, task)     //获取文件详情
-	go startEsAddBatch(c, task)          //项目文件入库
+	task.TaskPool.Submit(func() {
+		task.wait.Add(1)
+		startProjectTag(c, task)
+	})
+	task.TaskPool.Submit(func() {
+		task.wait.Add(1)
+		startProjectFileListData(c, task)
+	})
+	task.TaskPool.Submit(func() {
+		task.wait.Add(1)
+		startProjectFileData(c, task)
+	})
+	task.TaskPool.Submit(func() {
+		task.wait.Add(1)
+		startEsAddBatch(c, task)
+	})
 	task.wait.Wait()
 	stop := time.Since(task.start)
 	fmt.Printf("项目数 ：%v", task.projectNumber.String())
@@ -65,19 +74,18 @@ func UpProjects(c *gin.Context) (err error) {
 }
 
 //ProjectCodeUp 更新指定项目
-func ProjectCodeUp(c *gin.Context, code string) (err error) {
+func ProjectCodeUp(c *gin.Context, envID int, code, tag string) (err error) {
 	project, _ := gitlab.QueryByName(c, ProjectReplace(c, code))
 	if project.Id > 0 {
 		var task = &TaskEsPool{
-			projectPathNumber:    atomic.NewInt64(0),
-			projectFileNumber:    atomic.NewInt64(0),
-			projectNumber:        atomic.NewInt64(0),
-			start:                time.Now(),
-			wait:                 &sync.WaitGroup{},
-			ProjectChan:          make(chan gitlab.Projects, 1000),
-			ProjectsTag:          make(chan gitlab.ProjectsTag, 10000),
-			ProjectsFileListChan: make(chan gitlab.ProjectsFileList, 10000),
-			ProjectsFileChan:     make(chan gitlab.ProjectsFileList, 10000),
+			projectPathNumber: atomic.NewInt64(0),
+			projectFileNumber: atomic.NewInt64(0),
+			projectNumber:     atomic.NewInt64(0),
+			start:             time.Now(),
+			wait:              &sync.WaitGroup{},
+			ProjectsTag:       make(chan gitlab.ProjectsTag, 10000),
+			ProjectsFileChan:  make(chan gitlab.ProjectsFileList, 10000),
+			ProjectsPathChan:  make(chan gitlab.ProjectsFileList, 10000),
 		}
 		task.TaskPool, err = ants.NewPool(runtime.NumCPU() * 100)
 		if err != nil {
@@ -85,14 +93,29 @@ func ProjectCodeUp(c *gin.Context, code string) (err error) {
 		}
 		defer task.TaskPool.Release()
 		//删除项目数据
-		err = mongo.DelCodeAll(c, project.Name)
+		err = mongo.DelCodeAll(c, project.Name, tag)
 		if err != nil {
 			glogs.ErrorF(c, err.Error())
 		}
-		ProjectTag(c, project, task)
-		task.wait.Add(2)
-		go startProjectFileListData(c, task)
-		go startEsAddBatch(c, task)
+		task.ProjectsTag <- gitlab.ProjectsTag{
+			Id:    project.Id,
+			Tag:   tag,
+			EnvID: envID,
+			Code:  code,
+		}
+		task.TaskPool.Submit(func() {
+			task.wait.Add(1)
+			startProjectFileListData(c, task)
+		})
+
+		task.TaskPool.Submit(func() {
+			task.wait.Add(1)
+			startProjectFileData(c, task)
+		})
+		task.TaskPool.Submit(func() {
+			task.wait.Add(1)
+			startEsAddBatch(c, task)
+		})
 		task.wait.Wait()
 		stop := time.Since(task.start)
 		fmt.Printf("task over, 耗时：%v", stop)
@@ -129,13 +152,7 @@ func startProjectTag(c *gin.Context, task *TaskEsPool) {
 	// 从ch中接收值并赋值给变量x
 	for x := range task.ProjectChan {
 		wait.Add(1)
-		err := task.TaskPool.Submit(func() {
-			task.projectFileNumber.Add(1)
-			ProjectTag(c, x, task)
-		})
-		if err != nil {
-			glogs.ErrorF(c, "项目执行错误: "+x.Name, err.Error())
-		}
+		ProjectTag(c, x, task)
 		wait.Done()
 	}
 	wait.Wait()
@@ -149,13 +166,8 @@ func startProjectFileListData(c *gin.Context, task *TaskEsPool) {
 	// 从ch中接收值并赋值给变量x
 	for x := range task.ProjectsTag {
 		wait.Add(1)
-		err := task.TaskPool.Submit(func() {
-			ProjectList(c, x, task)
-			task.projectPathNumber.Add(1)
-		})
-		if err != nil {
-			glogs.ErrorF(c, "项目执行错误: "+strconv.Itoa(x.Id), err.Error())
-		}
+		fmt.Println("项目消费" + x.Code + "-" + x.Tag)
+		ProjectList(c, x, task)
 		wait.Done()
 	}
 	wait.Wait()
@@ -169,33 +181,20 @@ func startProjectFileData(c *gin.Context, task *TaskEsPool) {
 	// 从ch中接收值并赋值给变量x
 	for x := range task.ProjectsFileChan {
 		wait.Add(1)
-		err := task.TaskPool.Submit(func() {
-			ProjectTree(c, x.Id, x.Tag, x.Name, x.ProjectsName, 1, x.EnvID, task)
-			fmt.Println(task.projectPathNumber.String())
-		})
-		if err != nil {
-			glogs.ErrorF(c, "项目执行错误: "+x.Name, err.Error())
-		}
+		ProjectTree(c, x.Id, x.Tag, x.Path, x.ProjectName, 1, x.EnvID, task)
 		wait.Done()
 	}
 	wait.Wait()
 }
 
 func startEsAddBatch(c *gin.Context, task *TaskEsPool) {
-	defer close(task.ProjectsFileListChan)
+	defer close(task.ProjectsPathChan)
 	defer task.wait.Done()
 	var wait sync.WaitGroup
 	// 从ch中接收值并赋值给变量x
-	for x := range task.ProjectsFileListChan {
+	for x := range task.ProjectsPathChan {
 		wait.Add(1)
-		err := task.TaskPool.Submit(func() {
-			fmt.Println("入库数据" + x.Name + "-" + x.Tag)
-			mongo.AddOne(c, viper.GetString("git.gitlab_code_name"), x)
-			task.projectPathNumber.Add(1)
-		})
-		if err != nil {
-			glogs.ErrorF(c, "项目执行错误: "+x.Name, err.Error())
-		}
+		mongo.AddOne(c, viper.GetString("git.gitlab_code_name"), x)
 		wait.Done()
 	}
 	wait.Wait()

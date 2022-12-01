@@ -122,9 +122,13 @@ func DelAll(c *gin.Context) (err error) {
 }
 
 //DelCodeAll 删除指定项目
-func DelCodeAll(c *gin.Context, project string) (err error) {
+func DelCodeAll(c *gin.Context, projectName, tag string) (err error) {
 	collection := gstore.Mdb.Database(viper.GetString("git.gitlab_depod_name")).Collection(viper.GetString("git.gitlab_project_name"))
-	_, err = collection.DeleteMany(c, bson.M{"projectsname": project})
+	if tag != "" {
+		_, err = collection.DeleteMany(c, bson.M{"projectname": projectName, "tag": tag})
+	} else {
+		_, err = collection.DeleteMany(c, bson.M{"projectname": projectName})
+	}
 	return
 }
 

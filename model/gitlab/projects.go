@@ -41,15 +41,15 @@ type ProjectsTag struct {
 }
 
 type ProjectsFileList struct {
-	Id           string `json:"id"`
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	Path         string `json:"path"`
-	Mode         string `json:"mode"`
-	Content      string `json:"content"`
-	Tag          string `json:"tag"`
-	ProjectsName string `json:"projects_name"`
-	EnvID        int    `json:"env_id"`
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Path        string `json:"path"`
+	Mode        string `json:"mode"`
+	Content     string `json:"content"`
+	Tag         string `json:"tag"`
+	ProjectName string `json:"project_name"`
+	EnvID       int    `json:"env_id"`
 	//ProjectsID   string `json:"projects_id"`
 }
 
@@ -115,7 +115,7 @@ func GetProjectsList(c *gin.Context, page, perPage int) (resp []Projects, err er
 @ page 页码
 */
 func ProjectFileList(c *gin.Context, projectsId, ref string, page int, path string) (data []ProjectsFileList, err error) {
-	urls := viper.GetString("git.url") + "/api/v4/projects/" + projectsId + "/repository/tree?recursive=true&per_page=100&page=" + strconv.Itoa(page) + GetPrivateToken()
+	urls := viper.GetString("git.url") + "/api/v4/projects/" + projectsId + "/repository/tree?per_page=100&page=" + strconv.Itoa(page) + GetPrivateToken()
 	if ref != "" {
 		urls = urls + "&ref=" + ref
 	}
@@ -145,7 +145,7 @@ func ProjectFileList(c *gin.Context, projectsId, ref string, page int, path stri
 @ projectsName 项目标识
 */
 
-func ProjectTree(c *gin.Context, projectsId, ref, recursive, path string, page, envID int, projectsName string, req []interface{}) (resp []interface{}) {
+func ProjectTree(c *gin.Context, projectsId, ref, recursive, path string, page, envID int, projectName string, req []interface{}) (resp []interface{}) {
 	resp = req
 	urls := viper.GetString("git.url") + "/api/v4/projects/" + projectsId + "/repository/tree?per_page=100" + "&page=" + strconv.Itoa(page) + GetPrivateToken()
 	if ref != "" {
@@ -173,14 +173,14 @@ func ProjectTree(c *gin.Context, projectsId, ref, recursive, path string, page, 
 			if v.Type == "tree" {
 				v.Id = projectsId
 				v.Tag = ref
-				v.ProjectsName = projectsName
+				v.ProjectName = projectName
 				v.EnvID = envID
-				resp = ProjectTree(c, projectsId, ref, recursive, v.Path, 1, envID, projectsName, resp)
+				resp = ProjectTree(c, projectsId, ref, recursive, v.Path, 1, envID, projectName, resp)
 			} else {
 				v.Content = GetFileRaw(c, projectsId, v.Path, ref)
 				if v.Content != "" {
 					v.Id = projectsId
-					v.ProjectsName = projectsName
+					v.ProjectName = projectName
 					v.EnvID = envID
 					resp = append(resp, v)
 				}
@@ -188,7 +188,7 @@ func ProjectTree(c *gin.Context, projectsId, ref, recursive, path string, page, 
 
 		}
 		if len(data) == 100 {
-			resp = ProjectTree(c, projectsId, ref, recursive, path, page+1, envID, projectsName, resp)
+			resp = ProjectTree(c, projectsId, ref, recursive, path, page+1, envID, projectName, resp)
 		}
 	}
 	return
@@ -204,52 +204,7 @@ func GetFileRaw(c *gin.Context, projectsId, filePath, ref string) (resp string) 
 			glogs.Error(err.Error())
 			return
 		}
-		if string(res) == "{\"message\":\"404 File Not Found\"}" {
-			return
-		}
 		return string(res)
 	}
 	return
 }
-
-// GetProjectsList 获取项目列表
-//func GetProjectsList(c *gin.Context, envID int, projectsId, ref, recursive, path, projectsName string, page int, task *TaskEsPool) {
-//	url := viper.GetString("git.url") + "/api/v4/projects/" + projectsId + "/repository/tree?per_page=100" + "&page=" + strconv.Itoa(page) + GetPrivateToken()
-//	if ref != "" {
-//		url = url + "&ref=" + ref
-//	}
-//	if recursive != "true" {
-//		url = url + "&recursive=" + recursive
-//	}
-//	if path != "" {
-//		url = url + "&path=" + path
-//	}
-//	body, err := utils.HttpGet(c, url, nil)
-//	if err != nil {
-//		glogs.ErrorF(c, err.Error())
-//		return
-//	}
-//	var resp []ProjectsFileList
-//	err = json.Unmarshal(body, &resp)
-//	if err != nil {
-//		glogs.ErrorF(c, err.Error())
-//		return
-//	}
-//	if len(resp) > 0 {
-//		for _, v := range resp {
-//			v.Id = projectsId
-//			v.Tag = ref
-//			v.EnvID = envID
-//			v.ProjectsName = projectsName
-//			if v.Type == "tree" {
-//				task.ProjectsFileChan <- v
-//			} else {
-//				task.ProjectsFileListChan <- v
-//			}
-//		}
-//	}
-//	if len(resp) == 100 {
-//		GetProjectsList(c, envID, projectsId, ref, recursive, path, projectsName, page+1, task)
-//	}
-//	return
-//}
