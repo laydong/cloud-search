@@ -1,8 +1,7 @@
 package mysql
 
 import (
-	"codesearch/global"
-	"codesearch/global/gstore"
+	"cloud-search/global"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,7 +29,7 @@ func (m *ProjectModel) TableName() string {
 }
 
 func (m *ProjectModel) QueryByCode(c *gin.Context, code string) (data []DataModel, err error) {
-	err = gstore.GetDB(c).Model(ProjectModel{}).
+	err = global.GetDB(c).Model(ProjectModel{}).
 		Where("status", 1).
 		Where("code", code).
 		Select("distinct xthk_project.`code`,xthk_project.env_id,(SELECT tag FROM xthk_project_chart WHERE project_id=xthk_project.id ORDER BY updated_at DESC LIMIT 1) AS tag").

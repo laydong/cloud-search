@@ -1,23 +1,40 @@
 package main
 
 import (
-	"codesearch/conf"
-	"codesearch/global/glogs"
-	"codesearch/global/gstore"
-	"codesearch/router"
+	"cloud-search/conf"
+	"cloud-search/global"
+	"cloud-search/router"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/laydong/toolpkg"
+	"github.com/laydong/toolpkg/db"
 )
 
 func main() {
+	//初始化配置
 	err := conf.InitDoAfter()
 	if err != nil {
-		return
+		panic(err)
 	}
-	glogs.InitLog()
-	gstore.InitMongoDb(conf.ConfInfo.MGConf.Dsn, conf.ConfInfo.MGConf.ConnMaxPoolSize, conf.ConfInfo.MGConf.ConnTimeOut)
-	gstore.InitDB(conf.ConfInfo.DBConf.Dsn)
-	gstore.InitRdb(conf.ConfInfo.RDConf.Addr, conf.ConfInfo.RDConf.Password, conf.ConfInfo.RDConf.DB)
+	//初始化 日志服务
+	toolpkg.InitLog(toolpkg.AppConf{
+		AppName: conf.ConfInfo.AppConf.Name,
+		AppMode: conf.ConfInfo.AppConf.Mode,
+	})
+	global.DB, err = db.InitDB(conf.ConfInfo.DBConf.Dsn)
+	if err != nil {
+		panic(err)
+	}
+	global.Rdb, err = db.InitRdb(conf.ConfInfo.RDConf.Addr, conf.ConfInfo.RDConf.Password, conf.ConfInfo.RDConf.DB)
+	if err != nil {
+		panic(err)
+	}
+	if err != nil {
+		panic(err)
+	}
+	gin.SetMode(conf.ConfInfo.AppConf.Mode)
+	//初始化路由
 	routers := router.Routers()
-	address := fmt.Sprintf("0.0.0.0:%v", conf.ConfInfo.AppConf.HttpListen)
+	address := fmt.Sprintf("0.0.0.0:%v", "80")
 	_ = routers.Run(address)
 }

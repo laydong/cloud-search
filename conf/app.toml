@@ -1,34 +1,33 @@
 [app]
-name = "codesearch"
-mode = "dev"
+name = "cloud-search"
+mode = "debug"
 level = "info"
 http_listen = "80"
 url = "0.0.0.0:30080"
 pprof = false
 params = false
-logger = "/log"
+logger = "/home/logs/app"
 version = "1.0.0"
 
 [mongodb]
 dsn = "mongodb://admin:123456@127.0.0.1:27017"
-#dsn = "mongodb://root:xthk123456@192.168.3.100:32335"
 conn_time_out= 10
 conn_max_pool_size= 10
 
 [mysql]
-dsn = "root:xthk123456@tcp(192.168.3.100:30321)/xthk_devops?charset=utf8&parseTime=True&loc=Local"
+dsn = "root:root@tcp(127.0.0.1:3306)/xthk_devops?charset=utf8&parseTime=True&loc=Local"
 db_name = "xthk_devops"
 max_idle_conn = 10
 max_open_conn = 100
 conn_max_lifetime = 6
 
 [git]
-Key = "rSspW_3wxn_tyUL48e6x"
-url = "https://gitlab.xthktech.cn"
-gitlab_depod_name = "data"
+Key = "#########"
+url = "https://gitlab.com"
+gitlab_depod_name = "app_gitlab"
 gitlab_code_name = "code_list"
 gitlab_project_name = "project_list"
-key_end = 1800
+key_end = 600
 
 [redis]
 addr = "127.0.0.1:6379"

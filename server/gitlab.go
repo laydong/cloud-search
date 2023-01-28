@@ -1,13 +1,13 @@
 package server
 
 import (
-	"codesearch/global/glogs"
-	"codesearch/model/gitlab"
-	"codesearch/model/mongo"
-	"codesearch/utils"
+	"cloud-search/model/gitlab"
+	"cloud-search/model/mongo"
+	"cloud-search/utils"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/laydong/toolpkg/logx"
 	"github.com/panjf2000/ants/v2"
 	"github.com/spf13/viper"
 	"go.uber.org/atomic"
@@ -95,7 +95,7 @@ func ProjectCodeUp(c *gin.Context, envID int, code, tag string) (err error) {
 		//删除项目数据
 		err = mongo.DelCodeAll(c, project.Name, tag)
 		if err != nil {
-			glogs.ErrorF(c, err.Error())
+			logx.ErrorF(c, err.Error())
 		}
 		task.ProjectsTag <- gitlab.ProjectsTag{
 			Id:    project.Id,
@@ -244,7 +244,7 @@ func ProjectReplace(c *gin.Context, project string) (resp string) {
 //			//GetTree(c, strconv.Itoa(x.Id), x.DefaultBranch, "true", x.Path, 1, x.Name, task, &wait)
 //		})
 //		if err != nil {
-//			glogs.ErrorF(c, "项目执行错误: "+x.Name, err.Error())
+//			logx.ErrorF(c, "项目执行错误: "+x.Name, err.Error())
 //		}
 //	}
 //	wait.Wait()

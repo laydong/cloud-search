@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"codesearch/server"
-	"codesearch/utils"
+	"cloud-search/server"
+	"cloud-search/utils"
 	"github.com/gin-gonic/gin"
 )
 

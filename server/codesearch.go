@@ -1,8 +1,8 @@
 package server
 
 import (
-	"codesearch/model/gitlab"
-	"codesearch/model/mysql"
+	"cloud-search/model/gitlab"
+	"cloud-search/model/mysql"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"strconv"

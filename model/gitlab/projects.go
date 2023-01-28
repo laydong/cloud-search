@@ -1,10 +1,10 @@
 package gitlab
 
 import (
-	"codesearch/global/glogs"
-	"codesearch/utils"
+	"cloud-search/utils"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/laydong/toolpkg/logx"
 	"github.com/spf13/viper"
 	"net/url"
 	"strconv"
@@ -12,25 +12,25 @@ import (
 )
 
 type Projects struct {
-	Id                int                `json:"id"`
-	EnvID             int                `json:"env_id"`
-	Description       string             `json:"description"`
-	Name              string             `json:"name"`
-	NameWithNamespace string             `json:"name_with_namespace"`
-	Path              string             `json:"path"`
-	PathWithNamespace string             `json:"path_with_namespace"`
-	CreatedAt         time.Time          `json:"created_at"`
-	DefaultBranch     string             `json:"default_branch"`
-	TagList           []interface{}      `json:"tag_list"`
-	SshUrlToRepo      string             `json:"ssh_url_to_repo"`
-	HttpUrlToRepo     string             `json:"http_url_to_repo"`
-	WebUrl            string             `json:"web_url"`
-	ReadmeUrl         string             `json:"readme_url"`
-	AvatarUrl         interface{}        `json:"avatar_url"`
-	StarCount         int                `json:"star_count"`
-	ForksCount        int                `json:"forks_count"`
-	CodeFile          []ProjectsFileList `json:"code_file"`
-	Tag               string             `json:"tag"`
+	Id                int                `json:"id" bson:"id"`
+	EnvID             int                `json:"env_id" bson:"env_id"`
+	Description       string             `json:"description" bson:"description"`
+	Name              string             `json:"name" bson:"name"`
+	NameWithNamespace string             `json:"name_with_namespace" bson:"name_with_namespace"`
+	Path              string             `json:"path" bson:"path"`
+	PathWithNamespace string             `json:"path_with_namespace" bson:"path_with_namespace"`
+	CreatedAt         time.Time          `json:"created_at" bson:"created_at"`
+	DefaultBranch     string             `json:"default_branch" bson:"default_branch"`
+	TagList           []interface{}      `json:"tag_list" bson:"tag_list"`
+	SshUrlToRepo      string             `json:"ssh_url_to_repo" bson:"ssh_url_to_repo"`
+	HttpUrlToRepo     string             `json:"http_url_to_repo" bson:"http_url_to_repo"`
+	WebUrl            string             `json:"web_url" bson:"web_url"`
+	ReadmeUrl         string             `json:"readme_url" bson:"readme_url"`
+	AvatarUrl         interface{}        `json:"avatar_url" bson:"avatar_url"`
+	StarCount         int                `json:"star_count" bson:"star_count"`
+	ForksCount        int                `json:"forks_count" bson:"forks_count"`
+	CodeFile          []ProjectsFileList `json:"code_file" bson:"code_file"`
+	Tag               string             `json:"tag" bson:"tag"`
 }
 
 type ProjectsTag struct {
@@ -41,16 +41,15 @@ type ProjectsTag struct {
 }
 
 type ProjectsFileList struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Path        string `json:"path"`
-	Mode        string `json:"mode"`
-	Content     string `json:"content"`
-	Tag         string `json:"tag"`
-	ProjectName string `json:"project_name"`
-	EnvID       int    `json:"env_id"`
-	//ProjectsID   string `json:"projects_id"`
+	Id          string `json:"id" bson:"id"`
+	Name        string `json:"name" bson:"name"`
+	Type        string `json:"type" bson:"type"`
+	Path        string `json:"path" bson:"path"`
+	Mode        string `json:"mode" bson:"mode"`
+	Content     string `json:"content" bson:"content"`
+	Tag         string `json:"tag" bson:"tag"`
+	ProjectName string `json:"project_name" bson:"project_name"`
+	EnvID       int    `json:"env_id" bson:"env_id"`
 }
 
 // GetPrivateToken 获取git密钥
@@ -64,7 +63,7 @@ func QueryByID(c *gin.Context, id int) (resp Projects, err error) {
 	urls := viper.GetString("git.url") + "/api/v4/projects/" + strconv.Itoa(id) + GetPrivateToken()
 	body, err := utils.HttpGet(c, urls, nil)
 	if err != nil {
-		glogs.Error("项目信息获取错误", err.Error())
+		logx.Error("项目信息获取错误", err.Error())
 		return
 	}
 	err = json.Unmarshal(body, &resp)
@@ -76,7 +75,7 @@ func QueryByName(c *gin.Context, project string) (resp Projects, err error) {
 	urls := "https://gitlab.xthktech.cn/api/v4/projects?search=" + project + GetPrivateToken()
 	body, err := utils.HttpGet(c, urls, nil)
 	if err != nil {
-		glogs.ErrorF(c, "项目信息获取错误", err.Error())
+		logx.ErrorF(c, "项目信息获取错误", err.Error())
 		return
 	}
 	var data []Projects
@@ -99,7 +98,7 @@ func GetProjectsList(c *gin.Context, page, perPage int) (resp []Projects, err er
 	urls := viper.GetString("git.url") + "/api/v4/projects?pagination=keyset&page=" + strconv.Itoa(page) + "&per_page=" + strconv.Itoa(perPage) + GetPrivateToken()
 	body, err := utils.HttpGet(c, urls, nil)
 	if err != nil {
-		glogs.Error("项目信息获取错误", err.Error())
+		logx.Error("项目信息获取错误", err.Error())
 		return
 	}
 	err = json.Unmarshal(body, &resp)
@@ -124,13 +123,13 @@ func ProjectFileList(c *gin.Context, projectsId, ref string, page int, path stri
 	}
 	body, err := utils.HttpGet(c, urls, nil)
 	if err != nil {
-		glogs.Error(err.Error())
+		logx.Error(err.Error())
 		return
 	}
 	//resp := []ProjectsFileList{}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		glogs.Error(err.Error())
+		logx.Error(err.Error())
 	}
 	return
 }
@@ -159,13 +158,13 @@ func ProjectTree(c *gin.Context, projectsId, ref, recursive, path string, page, 
 	}
 	body, err := utils.HttpGet(c, urls, nil)
 	if err != nil {
-		glogs.Error(err.Error())
+		logx.Error(err.Error())
 		return
 	}
 	var data []ProjectsFileList
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		glogs.Error(err.Error())
+		logx.Error(err.Error())
 		return
 	}
 	if len(data) > 0 {
@@ -201,7 +200,7 @@ func GetFileRaw(c *gin.Context, projectsId, filePath, ref string) (resp string) 
 		urls := viper.GetString("git.url") + "/api/v4/projects/" + projectsId + "/repository/files/" + url.QueryEscape(filePath) + "/raw?ref=" + ref + GetPrivateToken()
 		res, err := utils.HttpGet(c, urls, nil)
 		if err != nil {
-			glogs.Error(err.Error())
+			logx.Error(err.Error())
 			return
 		}
 		return string(res)

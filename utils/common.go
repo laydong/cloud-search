@@ -2,13 +2,16 @@ package utils
 
 import (
 	"bytes"
-	"codesearch/global/gcalx"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/laydong/toolpkg"
+	"github.com/laydong/toolpkg/logx"
 	"github.com/pkg/errors"
 	"io"
+	"net/http"
 	"path"
-
 	"strings"
+	"time"
 )
 
 const (
@@ -20,38 +23,54 @@ const (
 
 // HttpGet http get请求
 func HttpGet(c *gin.Context, urls string, head map[string]string) (resp []byte, err error) {
-	client := gcalx.DefaultClient().WithITrace(c).WithOption(OPT_TIMEOUT, 60).WithHeader("Content-Type", "application/json")
+	req, err := http.NewRequest("GET", urls, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(toolpkg.XtraceKey, c.GetHeader(toolpkg.XtraceKey))
 	if len(head) > 0 {
 		for k, v := range head {
-			client = client.WithHeader(k, v)
+			req.Header.Set(k, v)
 		}
 	}
-	res, err := client.Get(urls, nil)
+	client := http.Client{
+		Timeout: time.Second * 60,
+	}
+	res, err := client.Do(req)
 	if err != nil {
 		return
 	}
 	defer res.Body.Close()
 	resp, err = io.ReadAll(res.Body)
-	if res.StatusCode != 200 {
-		err = errors.New(string(resp))
-	}
+	logx.InfoSdk(c, "get请求", urls, string(resp))
 	return
 }
 
 // HttpPost http POST请求
 func HttpPost(c *gin.Context, url string, data map[string]interface{}, head map[string]string) (body []byte, err error) {
-	client := gcalx.DefaultClient().WithITrace(c).WithOption(OPT_TIMEOUT, 60).WithHeader("Content-Type", "application/json")
-	if len(head) > 0 {
-		for k, v := range head {
-			client = client.WithHeader(k, v)
-		}
-	}
-	resp, err := client.PostJson(url, data)
+	marshal, _ := json.Marshal(data)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(marshal))
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
-	body, err = io.ReadAll(resp.Body)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(toolpkg.XtraceKey, c.GetHeader(toolpkg.XtraceKey))
+	if len(head) > 0 {
+		for k, v := range head {
+			req.Header.Set(k, v)
+		}
+	}
+	client := http.Client{
+		Timeout: time.Second * 60,
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer res.Body.Close()
+	body, err = io.ReadAll(res.Body)
+	logx.InfoSdk(c, "post请求", url, data, string(body))
 	return
 }
 

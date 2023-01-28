@@ -33,6 +33,7 @@ func InitDoAfter() error {
 		},
 		DBConf: DBConf{
 			Dsn:             viper.GetString("mysql.dsn"),
+			DbName:          viper.GetString("mysql.db_name"),
 			MaxIdleConn:     viper.GetInt("mysql.max_idle_conn"),
 			MaxOpenConn:     viper.GetInt("mysql.max_open_conn"),
 			ConnMaxLifetime: viper.GetInt("mysql.conn_max_lifetime"),
@@ -76,6 +77,7 @@ type DBConf struct {
 	MaxOpenConn     int    `json:"max_open_conn"`
 	ConnMaxLifetime int    `json:"conn_max_lifetime"`
 	Dsn             string `json:"dsn"`
+	DbName          string `json:"db_name"`
 }
 
 type RDConf struct {

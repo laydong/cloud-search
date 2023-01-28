@@ -1,6 +1,7 @@
 package global
 
 import (
+	"github.com/laydong/toolpkg/utils"
 	"gorm.io/gorm"
 )
 
@@ -9,7 +10,7 @@ type ModelID struct {
 }
 
 type ModelTime struct {
-	CreatedAt Time           `gorm:"column:created_at;NOT NULL;comment:创建时间" json:"created_at"` // 创建时间
-	UpdatedAt Time           `gorm:"column:updated_at;NOT NULL;comment:更新时间" json:"updated_at"` // 更新时间
+	CreatedAt utils.Time     `gorm:"column:created_at;NOT NULL;comment:创建时间" json:"created_at"` // 创建时间
+	UpdatedAt utils.Time     `gorm:"column:updated_at;NOT NULL;comment:更新时间" json:"updated_at"` // 更新时间
 	DeletedAt gorm.DeletedAt `gorm:"index;comment:删除时间" json:"-"`                               // 删除时间
 }
