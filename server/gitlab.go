@@ -148,7 +148,6 @@ func startProjectTag(c *gin.Context, task *TaskEsPool) {
 	defer close(task.ProjectChan)
 	defer task.wait.Done()
 	var wait sync.WaitGroup
-	defer wait.Done()
 	// 从ch中接收值并赋值给变量x
 	for x := range task.ProjectChan {
 		wait.Add(1)
@@ -207,7 +206,6 @@ func GetProjectsAll(c *gin.Context, page, perPage int, req []gitlab.Projects) (d
 			v.Tag = v.DefaultBranch
 			req = append(req, v)
 		}
-		fmt.Println(page)
 		data, _ = GetProjectsAll(c, page+1, perPage, req)
 	} else {
 		data = req

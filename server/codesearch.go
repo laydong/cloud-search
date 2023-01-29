@@ -19,7 +19,6 @@ func ProjectTag(c *gin.Context, project gitlab.Projects, task *TaskEsPool) {
 		for _, v := range data {
 			wait.Add(1)
 			if v.Tag != "" {
-				fmt.Println("添加项目" + project.Name + "---" + v.Tag)
 				task.ProjectsTag <- gitlab.ProjectsTag{
 					Id:    project.Id,
 					Code:  projectName,
@@ -32,7 +31,6 @@ func ProjectTag(c *gin.Context, project gitlab.Projects, task *TaskEsPool) {
 	} else {
 		if project.Tag != "" {
 			wait.Add(1)
-			fmt.Println("添加项目2" + project.Name + "---" + project.Tag)
 			task.ProjectsTag <- gitlab.ProjectsTag{
 				Id:    project.Id,
 				Code:  projectName,
