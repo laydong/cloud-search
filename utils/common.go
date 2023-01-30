@@ -137,6 +137,7 @@ func FileExt(fileStr string) bool {
 		".icon",
 		".exe",
 		".dll",
+		".zip",
 		".Zip",
 		".avi",
 		".mpeg",
@@ -155,6 +156,7 @@ func FileExt(fileStr string) bool {
 		".strings",
 		".mobileprovision",
 		".jks",
+		".pyc",
 	}
 	for _, v := range esFile {
 		if strings.Contains(v, fileStr) {
